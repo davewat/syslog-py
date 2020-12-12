@@ -1,6 +1,6 @@
 # syslog-py
 
-Syslog client for Python 3 (RFC 3164/5424) for UNIX and Windows (fork from pysyslogclient with more features, bugs and options).
+Syslog client for Python 3 (RFC 3164/5424) for UNIX and Windows (fork from pysyslogclient with more features, fixed bugs and options).
 
 ## Description
 
