@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="syslog-py",
-    version="0.2.0",
+    version="0.2.1",
     author="Maciej Budzyński",
     author_email="maciej.budzyn@gmail.com",
     description="Syslog client implementation (RFC 3164/RFC 5424) with message transfer from RFC 6587 (Syslog over TCP)",
@@ -15,12 +15,12 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     classifiers=[
 	'Development Status :: 3 - Alpha',
-        "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3",
 	'Operating System :: Unix',
 	'Operating System :: POSIX :: Linux',
 	'Operating System :: Microsoft',
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.5',
     keywords='syslog logging octet-counting octet-stuffing',
     
 )
