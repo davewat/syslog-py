@@ -84,12 +84,15 @@ SEV_NOTICE = 5
 SEV_INFO = 6
 SEV_DEBUG = 7
 
+OCTET_COUNTING = 0
+OCTET_STUFFING = 1
+
 class SyslogClient(object):
 	"""
 	>>> client = SyslogClient("localhost", 10514)
 	>>> client.log("test")
 	"""
-	def __init__(self, server:str, port:int, proto:str='udp', forceipv4:bool=False, clientname:str=None, rfc:str=None, maxMessageLength:int=1024) -> None:
+	def __init__(self, server:str, port:int, proto:str='tcp', forceipv4:bool=False, clientname:str=None, rfc:str=None, maxMessageLength:int=1024, octet:int=OCTET_COUNTING) -> None:
 		self.socket = None
 		self.server = server
 		self.port = port
@@ -97,6 +100,7 @@ class SyslogClient(object):
 		self.rfc = rfc
 		self.maxMessageLength = maxMessageLength
 		self.forceipv4 = forceipv4
+		self.octet = octet
 
 		if proto != None:
 			if proto.upper() == 'UDP':
@@ -147,7 +151,7 @@ class SyslogClient(object):
 			self.socket.close()
 			self.socket = None
 
-	def log(self, message:str, timestamp:datetime=None, hostname:str=None, facility:int=None, severity:int=None) -> None:
+	def log(self, message:str, timestamp:datetime=None, hostname:str=None, facility:int=None, severity:int=None, octet:int=None) -> None:
 		pass
 
 	def send(self, messagedata:str) -> None:
@@ -160,6 +164,18 @@ class SyslogClient(object):
 			except IOError as e:
 				self.close()
 
+	def _build_octet_message(self, octet, d):
+		if OCTET_COUNTING is self._get_octet(octet):
+			return str(len(d)) + " " + d
+		else:
+			return d + "\n"
+
+	def _get_octet(self, octet):
+		if self.proto  is socket.SOCK_STREAM:
+			return octet if octet is not None else self.octet
+		else:
+			return OCTET_STUFFING
+
 class SyslogClientRFC5424(SyslogClient):
 	"""
 	>>> client = SyslogClientRFC5424("localhost", 10514, proto='udp')
@@ -167,7 +183,7 @@ class SyslogClientRFC5424(SyslogClient):
 	>>> client = SyslogClientRFC5424("localhost", 10514, proto='tcp')
 	>>> client.log("test")
 	"""
-	def __init__(self, server:str, port:int, proto:str='udp', forceipv4:bool=False, clientname:str=None) -> None:
+	def __init__(self, server:str, port:int, proto:str='tcp', forceipv4:bool=False, clientname:str=None, octet:int=OCTET_COUNTING) -> None:
 		SyslogClient.__init__(self,
 			server=server,
 			port=port,
@@ -175,10 +191,11 @@ class SyslogClientRFC5424(SyslogClient):
 			forceipv4=forceipv4,
 			clientname=clientname,
 			rfc='5424',
-			maxMessageLength=None,
+			maxMessageLength=1024 * 8,
+			octet=octet
 		)
 
-	def log(self, message:str, facility:int=None, severity:int=None, timestamp:datetime=None, hostname:str=None, version:int=1, program:str=None, pid:int=None, msgid:int=None):
+	def log(self, message:str, facility:int=None, severity:int=None, timestamp:datetime=None, hostname:str=None, version:int=1, program:str=None, pid:int=None, msgid:int=None, octet:int=None):
 		if facility == None:
 			facility = FAC_USER
 
@@ -212,7 +229,8 @@ class SyslogClientRFC5424(SyslogClient):
 		else:
 			msgid_s = msgid
 
-		d = "<%i>%i %s %s %s %s %s %s\n" % (
+
+		d = "<%i>%i %s %s %s %s %s %s" % (
 			pri,
 			version,
 			timestamp_s,
@@ -223,6 +241,8 @@ class SyslogClientRFC5424(SyslogClient):
 			message
 		)
 
+		d = self._build_octet_message(octet, d)
+
 		self.send(d.encode('utf-8'))
 
 class SyslogClientRFC3164(SyslogClient):
@@ -232,7 +252,7 @@ class SyslogClientRFC3164(SyslogClient):
 	>>> client = SyslogClientRFC3164("localhost", 10514, proto='tcp')
 	>>> client.log("test")
 	"""
-	def __init__(self, server:str, port:int, proto:str='udp', forceipv4:bool=False, clientname:str=None) -> None:
+	def __init__(self, server:str, port:int, proto:str='tcp', forceipv4:bool=False, clientname:str=None, octet:int=OCTET_COUNTING) -> None:
 		SyslogClient.__init__(self,
 			server=server,
 			port=port,
@@ -241,16 +261,17 @@ class SyslogClientRFC3164(SyslogClient):
 			clientname=clientname,
 			rfc='3164',
 			maxMessageLength=1024,
+			octet = octet
 		)
 
-	def log(self, message:str, facility:int=None, severity:int=None, timestamp:datetime=None, hostname:str=None, program:str="SyslogClient", pid:int=None) -> None:
+	def log(self, message:str, facility:int=None, severity:int=None, timestamp:datetime=None, hostname:str=None, program:str="SyslogClient", pid:int=None, octet:int=None) -> None:
 		if facility == None:
 			facility = FAC_USER
 
 		if severity == None:
 			severity = SEV_INFO
 
-		pri = facility*8 + severity
+		pri = facility*8 +  severity
 
 		if timestamp == None:
 			t = datetime.now()
@@ -280,6 +301,8 @@ class SyslogClientRFC3164(SyslogClient):
 			tag_s,
 			message
 		)
+
+		d = self._build_octet_message(octet, d)
 
 		self.send(d.encode('ASCII', 'ignore'))
 
