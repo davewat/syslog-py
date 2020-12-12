@@ -1,43 +1,27 @@
-# -*- coding: utf-8 -*-
+import setuptools
 
-from setuptools import setup, find_packages
-import pysyslogclient, sys
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
 
-long_description=open("README", "r").read(4096)
-
-setup(
-	name="pysyslogclient",
-	version=pysyslogclient.version,
-	description='Syslog client implementation (RFC 3164/RFC 5424) with message transfer from RFC 6587 (Syslog over TCP)',
-	long_description='Originally forked from syslog client of Alexander Böhm, https://github.com/aboehm/pysyslogclient'.
-	license='BSD-2-Clause',
-	url="https://github.com/maciejbudzyn/syslog-py",
-	
-	author="Maciej Budzyński",
-	author_email="maciej.budzyn@gmail.com",
-
-	classifiers = [
-		'Development Status :: 5 - Production/Stable',
-
-		'License :: OSI Approved :: BSD License',
-
-		'Programming Language :: Python :: 3 :: Only',
-		'Programming Language :: Python :: 3.5',
-		'Programming Language :: Python :: 3.6',
-		'Programming Language :: Python :: 3.7',
-		'Programming Language :: Python :: 3.8',
-
-		'Operating System :: Unix',
-		'Operating System :: POSIX :: Linux',
-		'Operating System :: Microsoft',
-
-		'Topic :: System :: Logging',
-		'Topic :: System :: Monitoring',
-  ],
-
-	packages=find_packages(),
-
-	keywords="syslog logging monitoring",
+setuptools.setup(
+    name="syslog-py",
+    version="0.0.1",
+    author="Maciej Budzyński",
+    author_email="maciej.budzyn@gmail.com",
+    description="Syslog client implementation (RFC 3164/RFC 5424) with message transfer from RFC 6587 (Syslog over TCP)",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/maciejbudzyn/syslog-py",
+    packages=setuptools.find_packages(),
+    classifiers=[
+	'Development Status :: 3 - Alpha',
+        "Programming Language :: Python :: 3",
+	'Operating System :: Unix',
+	'Operating System :: POSIX :: Linux',
+	'Operating System :: Windows',
+        "Operating System :: OS Independent",
+    ],
+    python_requires='>=3.6',
+    keywords='syslog logging octet-counting octet-stuffing',
+    
 )
-
-# vim: ft=python tabstop=2 shiftwidth=2 noexpandtab :
