@@ -1,4 +1,4 @@
-# pysyslogclient
+# syslog-py
 
 Syslog client for Python 3 (RFC 3164/5424) for UNIX and Windows
 
