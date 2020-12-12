@@ -70,7 +70,7 @@ In case of UDP protocol, octet parameter is ignored.
 Below in the first message, octet stuffing is in use, in second octet counting (forced by octet parameter in log method).
 ```
 import pysyslogclient
-client = pysyslogclient.SyslogClientRFC5424(SERVER, PORT, proto="TCP", octet="OCTET_STUFFING")
+client = pysyslogclient.SyslogClientRFC5424(SERVER, PORT, proto="TCP", octet=OCTET_STUFFING)
 
 client.log("Hello syslog server",
 	facility=pysyslogclient.FAC_SYSTEM,
@@ -83,7 +83,7 @@ client.log("Hello syslog server",
 	severity=pysyslogclient.SEV_EMERGENCY,
 	program="Logger",
 	pid=1,
-	octet=OCTET_COUNGING)
+	octet=OCTET_COUNTING)
 ```
 
 ### Shutdown
