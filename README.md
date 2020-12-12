@@ -8,6 +8,7 @@ Syslog client following
 
 * RFC3164 (https://www.ietf.org/rfc/rfc3164.txt)
 * RFC5424 (https://www.ietf.org/rfc/rfc5424.txt)
+* RFC6587 (https://www.ietf.org/rfc/rfc6587.txt) - for syslog over TCP
 
 with UNIX and Windows support. TCP and UDP transport is possible.
 
@@ -50,7 +51,7 @@ client.log("Hello syslog server")
 
 ```
 
-To specify more options, call log with more arguments. For example to log a
+To specify more options, call log with more arguments. For example to log
 the message as program *Logger* with PID *1* as facility *SYSTEM* with severity
 *EMERGENCY*, call log the following way:
 
@@ -60,6 +61,29 @@ client.log("Hello syslog server",
 	severity=pysyslogclient.SEV_EMERGENCY,
 	program="Logger",
 	pid=1)
+```
+
+For TCP protocol, the octet parameter is available in client constructor and in log method.
+The parameter in log method has precedence over constructor parameter.
+In case of UDP protocol, octet parameter is ignored.
+
+Below in the first message, octet stuffing is in use, in second octet counting (forced by octet parameter in log method).
+```
+import pysyslogclient
+client = pysyslogclient.SyslogClientRFC5424(SERVER, PORT, proto="TCP", octet="OCTET_STUFFING")
+
+client.log("Hello syslog server",
+	facility=pysyslogclient.FAC_SYSTEM,
+	severity=pysyslogclient.SEV_EMERGENCY,
+	program="Logger",
+	pid=1)
+
+client.log("Hello syslog server",
+	facility=pysyslogclient.FAC_SYSTEM,
+	severity=pysyslogclient.SEV_EMERGENCY,
+	program="Logger",
+	pid=1,
+	octet=OCTET_COUNGING)
 ```
 
 ### Shutdown
