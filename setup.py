@@ -9,7 +9,7 @@ setup(
 	name="pysyslogclient",
 	version=pysyslogclient.version,
 	description='Syslog client implementation (RFC 3164/RFC 5424) with message transfer from RFC 6587 (Syslog over TCP)',
-	long_description="Originaly forked from pysyslog client of Alexander Böhm, https://github.com/aboehm/pysyslogclient.
+	long_description='Originally forked from syslog client of Alexander Böhm, https://github.com/aboehm/pysyslogclient'.
 	license='BSD-2-Clause',
 	url="https://github.com/maciejbudzyn/syslog-py",
 	
