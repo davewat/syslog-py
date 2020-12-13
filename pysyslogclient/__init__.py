@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
-
-# Copyright (c) 2016, Alexander Böhm
+# Copyright (c) 2016, Alexander Böhm - pysyslogclient
+# Copyright (c) 2020, Maciej Budzyński - syslog-py
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -24,31 +23,33 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-version = "0.1.1"
+version = "0.2.2"
 
-import socket, sys
+import socket
 from datetime import datetime
 
+
 def datetime2rfc3339(dt, is_utc=False):
-	if is_utc == False:
-		# calculating timezone
-		d1 = datetime.now()
-		d2 = datetime.utcnow()
-		diff_hr = (d1-d2).seconds/60/60
-		tz = ""
+    if is_utc is False:
+        # calculating timezone
+        d1 = datetime.now()
+        d2 = datetime.utcnow()
+        diff_hr = (d1 - d2).seconds / 60 / 60
+        tz = ""
 
-		if diff_hr == 0:
-			tz = "Z"
-		else:
-			if diff_hr > 0:
-				tz = "+%s" % (tz) 
-		
-			tz = "%s%.2d%.2d" % (tz, diff_hr, 0)
+        if diff_hr == 0:
+            tz = "Z"
+        else:
+            if diff_hr > 0:
+                tz = "+%s" % (tz)
 
-		return "%s%s" % (dt.strftime("%Y-%m-%dT%H:%M:%S.%f"), tz)
+            tz = "%s%.2d%.2d" % (tz, diff_hr, 0)
 
-	else:
-		return dt.isoformat()+'Z'
+        return "%s%s" % (dt.strftime("%Y-%m-%dT%H:%M:%S.%f"), tz)
+
+    else:
+        return dt.isoformat() + 'Z'
+
 
 FAC_KERNEL = 0
 FAC_USER = 1
@@ -87,227 +88,274 @@ SEV_DEBUG = 7
 OCTET_COUNTING = 0
 OCTET_STUFFING = 1
 
+TRAILER_LF = 0
+TRAILER_CRLF = 1
+TRAILER_NULL = 2
+
+
 class SyslogClient(object):
-	"""
-	>>> client = SyslogClient("localhost", 10514)
-	>>> client.log("test")
-	"""
-	def __init__(self, server:str, port:int, proto:str='tcp', forceipv4:bool=False, clientname:str=None, rfc:str=None, maxMessageLength:int=1024, octet:int=OCTET_COUNTING) -> None:
-		self.socket = None
-		self.server = server
-		self.port = port
-		self.proto = socket.SOCK_DGRAM
-		self.rfc = rfc
-		self.maxMessageLength = maxMessageLength
-		self.forceipv4 = forceipv4
-		self.octet = octet
+    """
+    >>> client = SyslogClient("localhost", 10514)
+    >>> client.log("test")
+    """
 
-		if proto != None:
-			if proto.upper() == 'UDP':
-				self.proto = socket.SOCK_DGRAM
-			elif proto.upper() == 'TCP':
-				self.proto = socket.SOCK_STREAM
+    def __init__(self,
+                 server: str,
+                 port: int,
+                 proto: str = 'tcp',
+                 force_ipv4: bool = False,
+                 client_name: str = None,
+                 rfc: str = None,
+                 max_message_length: int = 1024,
+                 octet: int = OCTET_COUNTING,
+                 trailer: int = TRAILER_LF) -> None:
+        self.socket = None
+        self.server = server
+        self.port = port
+        self.proto = socket.SOCK_DGRAM
+        self.rfc = rfc
+        self.max_message_length = max_message_length
+        self.force_ipv4 = force_ipv4
+        self.octet = octet
+        self.trailer = trailer
 
-		if clientname == None:
-			self.clientname = socket.getfqdn()
-			if self.clientname == None:
-				self.clientname = socket.gethostname()
+        if proto is not None:
+            if proto.upper() == 'UDP':
+                self.proto = socket.SOCK_DGRAM
+            elif proto.upper() == 'TCP':
+                self.proto = socket.SOCK_STREAM
 
-	def connect(self) -> bool:
-		if self.socket == None:
-			r = socket.getaddrinfo(self.server, self.port, socket.AF_UNSPEC, self.proto) 
-			if r == None:
-				return False
-			
-			for (addr_fam, sock_kind, proto, ca_name, sock_addr) in r:
-				self.socket = socket.socket(addr_fam, self.proto)
-				if self.socket == None:
-					return False
+        if client_name is None:
+            self.client_name = socket.getfqdn()
+            if self.client_name is None:
+                self.client_name = socket.gethostname()
 
-				try:
-					self.socket.connect(sock_addr)
-					return True
+    def connect(self) -> bool:
+        if self.socket is None:
+            r = socket.getaddrinfo(self.server, self.port, socket.AF_UNSPEC, self.proto)
+            if r is None:
+                return False
 
-				except socket.timeout as e:
-					if self.socket != None:
-						self.socket.close()
-						self.socket = None
-					continue
+            for (addr_fam, sock_kind, proto, ca_name, sock_addr) in r:
+                self.socket = socket.socket(addr_fam, self.proto)
+                if self.socket is None:
+                    return False
 
-				# ensure python 2.x compatibility
-				except socket.error as e:
-					if self.socket != None:
-						self.socket.close()
-						self.socket = None
-					continue
+                try:
+                    self.socket.connect(sock_addr)
+                    return True
 
-			return False
+                except socket.timeout as e:
+                    if self.socket is not None:
+                        self.socket.close()
+                        self.socket = None
+                    continue
 
-		else:
-			return True
+                # ensure python 2.x compatibility
+                except socket.error as e:
+                    if self.socket is not None:
+                        self.socket.close()
+                        self.socket = None
+                    continue
 
-	def close(self) -> None:
-		if self.socket != None:
-			self.socket.close()
-			self.socket = None
+            return False
 
-	def log(self, message:str, timestamp:datetime=None, hostname:str=None, facility:int=None, severity:int=None, octet:int=None) -> None:
-		pass
+        else:
+            return True
 
-	def send(self, messagedata:str) -> None:
-		if self.socket != None or self.connect():
-			try:
-				if self.maxMessageLength != None:
-					self.socket.sendall(messagedata[:self.maxMessageLength])
-				else:
-					self.socket.sendall(messagedata)
-			except IOError as e:
-				self.close()
+    def close(self) -> None:
+        if self.socket is not None:
+            self.socket.close()
+            self.socket = None
 
-	def _build_octet_message(self, octet, d):
-		if OCTET_COUNTING is self._get_octet(octet):
-			return str(len(d)) + " " + d
-		else:
-			return d + "\n"
+    def log(self, message: str, timestamp: datetime = None, hostname: str = None, facility: int = None,
+            severity: int = None, octet: int = None) -> None:
+        pass
 
-	def _get_octet(self, octet):
-		if self.proto  is socket.SOCK_STREAM:
-			return octet if octet is not None else self.octet
-		else:
-			return OCTET_STUFFING
+    def send(self, message_data: str) -> None:
+        if self.socket is not None or self.connect():
+            try:
+                if self.max_message_length is not None:
+                    self.socket.sendall(message_data[:self.max_message_length])
+                else:
+                    self.socket.sendall(message_data)
+            except IOError as e:
+                self.close()
+
+    def _get_trailer(self):
+        if self.trailer is TRAILER_LF:
+            return "\n"
+        elif self.trailer is TRAILER_CRLF:
+            return "\r\n"
+        else:
+            return "\0"
+
+    def _build_octet_message(self, octet, d):
+        if OCTET_COUNTING is self._get_octet(octet):
+            return str(len(d)) + " " + d
+        else:
+            return d + self._get_trailer()
+
+    def _get_octet(self, octet):
+        if self.proto is socket.SOCK_STREAM:
+            return octet if octet is not None else self.octet
+        else:
+            return OCTET_STUFFING
+
 
 class SyslogClientRFC5424(SyslogClient):
-	"""
-	>>> client = SyslogClientRFC5424("localhost", 10514, proto='udp')
-	>>> client.log("test")
-	>>> client = SyslogClientRFC5424("localhost", 10514, proto='tcp')
-	>>> client.log("test")
-	"""
-	def __init__(self, server:str, port:int, proto:str='tcp', forceipv4:bool=False, clientname:str=None, octet:int=OCTET_COUNTING) -> None:
-		SyslogClient.__init__(self,
-			server=server,
-			port=port,
-			proto=proto,
-			forceipv4=forceipv4,
-			clientname=clientname,
-			rfc='5424',
-			maxMessageLength=1024 * 8,
-			octet=octet
-		)
+    """
+    >>> client = SyslogClientRFC5424("localhost", 10514, proto='udp')
+    >>> client.log("test")
+    >>> client = SyslogClientRFC5424("localhost", 10514, proto='tcp')
+    >>> client.log("test")
+    """
 
-	def log(self, message:str, facility:int=None, severity:int=None, timestamp:datetime=None, hostname:str=None, version:int=1, program:str=None, pid:int=None, msgid:int=None, octet:int=None):
-		if facility == None:
-			facility = FAC_USER
+    def __init__(self,
+                 server: str,
+                 port: int,
+                 proto: str = 'tcp',
+                 force_ipv4: bool = False,
+                 client_name: str = None,
+                 octet: int = OCTET_COUNTING,
+                 trailer: int = TRAILER_LF) -> None:
+        SyslogClient.__init__(self,
+                              server=server,
+                              port=port,
+                              proto=proto,
+                              force_ipv4=force_ipv4,
+                              client_name=client_name,
+                              rfc='5424',
+                              max_message_length=1024 * 8,
+                              octet=octet,
+                              trailer=trailer
+                              )
 
-		if severity == None:
-			severity = SEV_INFO
+    def log(self, message: str, facility: int = None, severity: int = None, timestamp: datetime = None,
+            hostname: str = None, version: int = 1, program: str = None, pid: int = None, msg_id: int = None,
+            octet: int = None):
+        if facility is None:
+            facility = FAC_USER
 
-		pri = facility*8 + severity
+        if severity is None:
+            severity = SEV_INFO
 
-		if timestamp == None:
-			timestamp_s = datetime2rfc3339(datetime.utcnow(), is_utc=True)
-		else:
-			timestamp_s = datetime2rfc3339(timestamp, is_utc=False)
+        pri = facility * 8 + severity
 
-		if hostname == None:
-			hostname_s = self.clientname 
-		else:
-			hostname_s = hostname
+        if timestamp is None:
+            timestamp_s = datetime2rfc3339(datetime.utcnow(), is_utc=True)
+        else:
+            timestamp_s = datetime2rfc3339(timestamp, is_utc=False)
 
-		if program == None:
-			appname_s = "-" 
-		else:
-			appname_s = program
+        if hostname is None:
+            hostname_s = self.client_name
+        else:
+            hostname_s = hostname
 
-		if pid == None:
-			procid_s = "-"
-		else:
-			procid_s = pid
+        if program is None:
+            appname_s = "-"
+        else:
+            appname_s = program
 
-		if msgid == None:
-			msgid_s = "-"
-		else:
-			msgid_s = msgid
+        if pid is None:
+            procid_s = "-"
+        else:
+            procid_s = pid
 
+        if msg_id is None:
+            msgid_s = "-"
+        else:
+            msgid_s = msg_id
 
-		d = "<%i>%i %s %s %s %s %s %s" % (
-			pri,
-			version,
-			timestamp_s,
-			hostname_s,
-			appname_s,
-			procid_s,
-			msgid_s,
-			message
-		)
+        d = "<%i>%i %s %s %s %s %s %s" % (
+            pri,
+            version,
+            timestamp_s,
+            hostname_s,
+            appname_s,
+            procid_s,
+            msgid_s,
+            message
+        )
 
-		d = self._build_octet_message(octet, d)
+        d = self._build_octet_message(octet, d)
+        
+        self.send(d.encode('utf-8'))
 
-		self.send(d.encode('utf-8'))
 
 class SyslogClientRFC3164(SyslogClient):
-	"""
-	>>> client = SyslogClientRFC3164("localhost", 10514, proto='udp')
-	>>> client.log("test")
-	>>> client = SyslogClientRFC3164("localhost", 10514, proto='tcp')
-	>>> client.log("test")
-	"""
-	def __init__(self, server:str, port:int, proto:str='tcp', forceipv4:bool=False, clientname:str=None, octet:int=OCTET_COUNTING) -> None:
-		SyslogClient.__init__(self,
-			server=server,
-			port=port,
-			proto=proto,
-			forceipv4=forceipv4,
-			clientname=clientname,
-			rfc='3164',
-			maxMessageLength=1024,
-			octet = octet
-		)
+    """
+    >>> client = SyslogClientRFC3164("localhost", 10514, proto='udp')
+    >>> client.log("test")
+    >>> client = SyslogClientRFC3164("localhost", 10514, proto='tcp')
+    >>> client.log("test")
+    """
 
-	def log(self, message:str, facility:int=None, severity:int=None, timestamp:datetime=None, hostname:str=None, program:str="SyslogClient", pid:int=None, octet:int=None) -> None:
-		if facility == None:
-			facility = FAC_USER
+    def __init__(self,
+                 server: str,
+                 port: int,
+                 proto: str = 'tcp',
+                 force_ipv4: bool = False,
+                 client_name: str = None,
+                 octet: int = OCTET_COUNTING,
+                 trailer: int = TRAILER_LF) -> None:
+        SyslogClient.__init__(self,
+                              server=server,
+                              port=port,
+                              proto=proto,
+                              force_ipv4=force_ipv4,
+                              client_name=client_name,
+                              rfc='3164',
+                              max_message_length=1024,
+                              octet=octet,
+                              trailer=trailer
+                              )
 
-		if severity == None:
-			severity = SEV_INFO
+    def log(self, message: str, facility: int = None, severity: int = None, timestamp: datetime = None,
+            hostname: str = None, program: str = "SyslogClient", pid: int = None, octet: int = None) -> None:
+        if facility is None:
+            facility = FAC_USER
 
-		pri = facility*8 +  severity
+        if severity is None:
+            severity = SEV_INFO
 
-		if timestamp == None:
-			t = datetime.now()
-		else:
-			t = timestamp
-	
-		timestamp_s = t.strftime("%b %d %H:%M:%S")
+        pri = facility * 8 + severity
 
-		if hostname == None:
-			hostname_s = self.clientname 
-		else:
-			hostname_s = hostname
+        if timestamp is None:
+            t = datetime.now()
+        else:
+            t = timestamp
 
-		tag_s = ""
-		if program == None:
-			tag_s += "SyslogClient"
-		else:
-			tag_s += program
+        timestamp_s = t.strftime("%b %d %H:%M:%S")
 
-		if pid != None:
-			tag_s += "[%i]" % (pid)
+        if hostname is None:
+            hostname_s = self.client_name
+        else:
+            hostname_s = hostname
 
-		d = "<%i>%s %s %s: %s\n" % (
-			pri,
-			timestamp_s,
-			hostname_s,
-			tag_s,
-			message
-		)
+        tag_s = ""
+        if program is None:
+            tag_s += "SyslogClient"
+        else:
+            tag_s += program
 
-		d = self._build_octet_message(octet, d)
+        if pid is not None:
+            tag_s += "[%i]" % pid
 
-		self.send(d.encode('ASCII', 'ignore'))
+        d = "<%i>%s %s %s: %s" % (
+            pri,
+            timestamp_s,
+            hostname_s,
+            tag_s,
+            message
+        )
+
+        d = self._build_octet_message(octet, d)
+
+        self.send(d.encode('ASCII', 'ignore'))
+
 
 if __name__ == '__main__':
-	import doctest
-	doctest.testmod()
+    import doctest
 
-# vim: ft=python tabstop=2 shiftwidth=2 noexpandtab :
+    doctest.testmod()

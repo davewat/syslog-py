@@ -1,4 +1,8 @@
 ## Release Notes
+0.2.2
+- adding trailer selection for octet stuffing
+- fixed some minor bugs
+- fixed some PEP issues
 0.2.1
 - fixed a bug for a cli client with selection of message type
 - python version requirements lowered to 3.5
