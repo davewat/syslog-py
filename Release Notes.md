@@ -1,4 +1,6 @@
 ## Release Notes
+0.2.3
+- docs updates
 0.2.2
 - adding trailer selection for octet stuffing
 - fixed some minor bugs

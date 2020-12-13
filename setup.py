@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="syslog-py",
-    version="0.2.2",
+    version="0.2.3",
     author="Maciej Budzyński",
     author_email="maciej.budzyn@gmail.com",
     description="Syslog client implementation (RFC 3164/RFC 5424) with message transfer from RFC 6587 (Syslog over TCP)",
