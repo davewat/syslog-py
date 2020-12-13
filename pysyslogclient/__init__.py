@@ -279,7 +279,7 @@ class SyslogClientRFC5424(SyslogClient):
         )
 
         d = self._build_octet_message(octet, d)
-        
+
         self.send(d.encode('utf-8'))
 
 

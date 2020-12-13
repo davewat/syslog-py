@@ -12,9 +12,9 @@ Syslog client following
 
 with UNIX and Windows support. TCP and UDP transport is possible.
 
-If TCP is used, on every log message, that is send to the specified server,
-and a connection error occured, the message will be dismissed and
-a reconnect will be tried for the next message.
+If TCP is used, on every log message that is sent to the specified server,
+and a connection error occurs, the message will be dismissed, and
+reconnection will be tried for the next message.
 
 ## Usage
 
@@ -26,7 +26,7 @@ python -m pysyslogclient.cli
 
 ### Startup client 
 
-To setup the client for RFC 5424 over TCP to send to SERVER:PORT:
+To set up the client for RFC5424 over TCP to send to SERVER:PORT:
 
 ```
 import pysyslogclient
@@ -43,7 +43,7 @@ client = pysyslogclient.SyslogClientRFC3164(SERVER, PORT, proto="TCP")
 ### Log a messsage
 
 Log the message "Hello syslog server" with standard severity *INFO* as facility
-*USER*. As program name *SyslogClient* the PID of the called python interpreter
+*USER*. As a program name *SyslogClient* the PID of the called python interpreter
 is used.
 
 ```
@@ -70,7 +70,10 @@ In case of UDP protocol, octet parameter is ignored.
 Below in the first message, octet stuffing is in use, in second octet counting (forced by octet parameter in log method).
 ```
 import pysyslogclient
-client = pysyslogclient.SyslogClientRFC5424(SERVER, PORT, proto="TCP", octet=OCTET_STUFFING)
+client = pysyslogclient.SyslogClientRFC5424(SERVER, 
+    PORT, 
+    proto="TCP", 
+    octet=pysyslogclient.OCTET_STUFFING)
 
 client.log("Hello syslog server",
 	facility=pysyslogclient.FAC_SYSTEM,
@@ -83,7 +86,20 @@ client.log("Hello syslog server",
 	severity=pysyslogclient.SEV_EMERGENCY,
 	program="Logger",
 	pid=1,
-	octet=OCTET_COUNTING)
+	octet=pysyslogclient.OCTET_COUNTING)
+```
+
+When octet stuffing in use (for a tcp or udp), the trailer type can be selected by constructor parameter.
+Applicable to both RFC3164 and RFC5424. Default value is TRAILER_LF
+
+```
+import SyslogClient
+client = pysyslogclient.SyslogClientRFC3164(SERVER, 
+    PORT, 
+    proto="TCP", 
+    octet=pysyslogclient.OCTET_STUFFING, 
+    trailer=pysyslogclient.TRAILER_CRLF)
+
 ```
 
 ### Shutdown
