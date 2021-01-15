@@ -168,8 +168,8 @@ class SyslogClient(object):
             self.socket.close()
             self.socket = None
 
-    def log(self, message: str, timestamp: datetime = None, hostname: str = None, facility: int = None,
-            severity: int = None, octet: int = None) -> None:
+    def log(self, message: str, timestamp: datetime = None, is_utc: bool = None, hostname: str = None,
+            facility: int = None, severity: int = None, octet: int = None) -> None:
         pass
 
     def send(self, message_data: str) -> None:
@@ -232,8 +232,8 @@ class SyslogClientRFC5424(SyslogClient):
                               )
 
     def log(self, message: str, facility: int = None, severity: int = None, timestamp: datetime = None,
-            hostname: str = None, version: int = 1, program: str = None, pid: int = None, msg_id: int = None,
-            octet: int = None):
+            is_utc: bool = None, hostname: str = None, version: int = 1, program: str = None, pid: int = None,
+            msg_id: int = None, octet: int = None):
         if facility is None:
             facility = FAC_USER
 
@@ -245,7 +245,10 @@ class SyslogClientRFC5424(SyslogClient):
         if timestamp is None:
             timestamp_s = datetime2rfc3339(datetime.utcnow(), is_utc=True)
         else:
-            timestamp_s = datetime2rfc3339(timestamp, is_utc=False)
+            if is_utc is None:
+                timestamp_s = datetime2rfc3339(timestamp, is_utc=False)
+            else:
+                timestamp_s = datetime2rfc3339(timestamp, is_utc=is_utc)
 
         if hostname is None:
             hostname_s = self.client_name
@@ -311,8 +314,9 @@ class SyslogClientRFC3164(SyslogClient):
                               trailer=trailer
                               )
 
-    def log(self, message: str, facility: int = None, severity: int = None, timestamp: datetime = None,
-            hostname: str = None, program: str = "SyslogClient", pid: int = None, octet: int = None) -> None:
+    def log(self, message: str, facility: int = None, severity: int = None,
+            timestamp: datetime = None, is_utc: bool = None, hostname: str = None, program: str = "SyslogClient",
+            pid: int = None, octet: int = None) -> None:
         if facility is None:
             facility = FAC_USER
 

@@ -1,4 +1,6 @@
 ## Release Notes
+0.2.4
+- adding is_utc parameter for log, valid only for RFC5424 when explicit datatime given as parameter
 0.2.3
 - docs updates
 0.2.2

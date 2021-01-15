@@ -45,7 +45,7 @@ import SyslogClient
 client = pysyslogclient.SyslogClientRFC3164(SERVER, PORT, proto="TCP")
 ```
 
-### Log a messsage
+### Log a message
 
 Log the message "Hello syslog server" with standard severity *INFO* as facility
 *USER*. As a program name *SyslogClient* the PID of the called python interpreter
@@ -106,6 +106,8 @@ client = pysyslogclient.SyslogClientRFC3164(SERVER,
     trailer=pysyslogclient.TRAILER_CRLF)
 
 ```
+
+For RFC5424, when datetime is given explicitly (in log method parameterd), the is_utc parameter is utilized to determine if given datetime is utc one. 
 
 ### Shutdown
 
