@@ -231,55 +231,58 @@ class SyslogClientRFC5424(SyslogClient):
                               trailer=trailer
                               )
 
-    def log(self, message: str, facility: int = None, severity: int = None, timestamp: datetime = None,
+    def log(self, message: str = None, raw_message: str = None, facility: int = None, severity: int = None, timestamp: datetime = None,
             is_utc: bool = None, hostname: str = None, version: int = 1, program: str = None, pid: int = None,
             msg_id: int = None, octet: int = None):
-        if facility is None:
-            facility = FAC_USER
+        if not raw_message:
+            if facility is None:
+                facility = FAC_USER
 
-        if severity is None:
-            severity = SEV_INFO
+            if severity is None:
+                severity = SEV_INFO
 
-        pri = facility * 8 + severity
+            pri = facility * 8 + severity
 
-        if timestamp is None:
-            timestamp_s = datetime2rfc3339(datetime.utcnow(), is_utc=True)
-        else:
-            if is_utc is None:
-                timestamp_s = datetime2rfc3339(timestamp, is_utc=False)
+            if timestamp is None:
+                timestamp_s = datetime2rfc3339(datetime.utcnow(), is_utc=True)
             else:
-                timestamp_s = datetime2rfc3339(timestamp, is_utc=is_utc)
+                if is_utc is None:
+                    timestamp_s = datetime2rfc3339(timestamp, is_utc=False)
+                else:
+                    timestamp_s = datetime2rfc3339(timestamp, is_utc=is_utc)
 
-        if hostname is None:
-            hostname_s = self.client_name
+            if hostname is None:
+                hostname_s = self.client_name
+            else:
+                hostname_s = hostname
+
+            if program is None:
+                appname_s = "-"
+            else:
+                appname_s = program
+
+            if pid is None:
+                procid_s = "-"
+            else:
+                procid_s = pid
+
+            if msg_id is None:
+                msgid_s = "-"
+            else:
+                msgid_s = msg_id
+
+            d = "<%i>%i %s %s %s %s %s %s" % (
+                pri,
+                version,
+                timestamp_s,
+                hostname_s,
+                appname_s,
+                procid_s,
+                msgid_s,
+                message
+            )
         else:
-            hostname_s = hostname
-
-        if program is None:
-            appname_s = "-"
-        else:
-            appname_s = program
-
-        if pid is None:
-            procid_s = "-"
-        else:
-            procid_s = pid
-
-        if msg_id is None:
-            msgid_s = "-"
-        else:
-            msgid_s = msg_id
-
-        d = "<%i>%i %s %s %s %s %s %s" % (
-            pri,
-            version,
-            timestamp_s,
-            hostname_s,
-            appname_s,
-            procid_s,
-            msgid_s,
-            message
-        )
+            d = raw_message
 
         d = self._build_octet_message(octet, d)
 
@@ -314,46 +317,48 @@ class SyslogClientRFC3164(SyslogClient):
                               trailer=trailer
                               )
 
-    def log(self, message: str, facility: int = None, severity: int = None,
+    def log(self, message: str = None, raw_message: str = None, facility: int = None, severity: int = None,
             timestamp: datetime = None, is_utc: bool = None, hostname: str = None, program: str = "SyslogClient",
             pid: int = None, octet: int = None) -> None:
-        if facility is None:
-            facility = FAC_USER
+        if not raw_message:
+            if facility is None:
+                facility = FAC_USER
 
-        if severity is None:
-            severity = SEV_INFO
+            if severity is None:
+                severity = SEV_INFO
 
-        pri = facility * 8 + severity
+            pri = facility * 8 + severity
 
-        if timestamp is None:
-            t = datetime.now()
+            if timestamp is None:
+                t = datetime.now()
+            else:
+                t = timestamp
+
+            timestamp_s = t.strftime("%b %d %H:%M:%S")
+
+            if hostname is None:
+                hostname_s = self.client_name
+            else:
+                hostname_s = hostname
+
+            tag_s = ""
+            if program is None:
+                tag_s += "SyslogClient"
+            else:
+                tag_s += program
+
+            if pid is not None:
+                tag_s += "[%i]" % pid
+
+            d = "<%i>%s %s %s: %s" % (
+                pri,
+                timestamp_s,
+                hostname_s,
+                tag_s,
+                message
+            )
         else:
-            t = timestamp
-
-        timestamp_s = t.strftime("%b %d %H:%M:%S")
-
-        if hostname is None:
-            hostname_s = self.client_name
-        else:
-            hostname_s = hostname
-
-        tag_s = ""
-        if program is None:
-            tag_s += "SyslogClient"
-        else:
-            tag_s += program
-
-        if pid is not None:
-            tag_s += "[%i]" % pid
-
-        d = "<%i>%s %s %s: %s" % (
-            pri,
-            timestamp_s,
-            hostname_s,
-            tag_s,
-            message
-        )
-
+            d = raw_message
         d = self._build_octet_message(octet, d)
 
         self.send(d.encode('ASCII', 'ignore'))
